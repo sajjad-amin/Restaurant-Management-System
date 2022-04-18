@@ -3,10 +3,10 @@ package com.sajjadamin.restaurantmanagementsystem;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.event.*;
+import java.awt.print.*;
 import java.sql.SQLException;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -22,6 +22,7 @@ public class GUI {
     JTable foodTable, billInfoTable, optionTable;
     Database db;
 
+
     GUI() throws SQLException {
         initComponents();
         this.db = new Database();
@@ -34,10 +35,10 @@ public class GUI {
         icon = new ImageIcon(getClass().getResource("icon.png"));
         //Main frame
         frame = new JFrame();
-        frame.setTitle("DGC Canteen");
+        frame.setTitle("Green Canteen");
         frame.setIconImage(icon.getImage());
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setBounds(0,0,800,500);
+        frame.setBounds(0,0,840,500);
         frame.setLocationRelativeTo(frame);
         frame.setResizable(false);
         frame.setVisible(true);
@@ -46,7 +47,7 @@ public class GUI {
         container.setLayout(null);
         //Tabbed pane
         tabbedPane = new JTabbedPane();
-        tabbedPane.setBounds(0,0,800,450);
+        tabbedPane.setBounds(10,0,800,450);
         container.add(tabbedPane);
         //main panels
         foodPanel = new JPanel();
@@ -61,34 +62,31 @@ public class GUI {
     }
 
     private void optionPanelComponents() {
-        createLabel("Manage Food",new int[]{570,0,100,30},optionsPanel);
-        createLabel("ID : ",new int[]{460,60,100,20},optionsPanel);
-        createLabel("Item : ",new int[]{460,90,100,20},optionsPanel);
-        createLabel("Price : ",new int[]{460,120,100,20},optionsPanel);
-        createLabel("Quantity : ",new int[]{460,150,100,20},optionsPanel);
+        createLabel("Manage Food",new int[]{590,0,100,30},optionsPanel);
+        createLabel("Item : ",new int[]{460,50,100,20},optionsPanel);
+        createLabel("Price : ",new int[]{460,80,100,20},optionsPanel);
+        createLabel("Quantity : ",new int[]{460,110,100,20},optionsPanel);
         //Option text fields
         JTextField optionId = new JTextField();
-        optionId.setBounds(560,60,200,20);
-        optionsPanel.add(optionId);
         JTextField optionItem = new JTextField();
-        optionItem.setBounds(560,90,200,20);
+        optionItem.setBounds(560,50,200,20);
         optionsPanel.add(optionItem);
         JTextField optionPrice = new JTextField();
-        optionPrice.setBounds(560,120,200,20);
+        optionPrice.setBounds(560,80,200,20);
         optionsPanel.add(optionPrice);
         JTextField optionQuantity = new JTextField();
-        optionQuantity.setBounds(560,150,200,20);
+        optionQuantity.setBounds(560,110,200,20);
         optionsPanel.add(optionQuantity);
         //Option butons
         JButton optionAdd = new JButton("Add");
-        optionAdd.setBounds(460,200,100,20);
+        optionAdd.setBounds(460,160,100,20);
         optionsPanel.add(optionAdd);
         JButton optionUpdate = new JButton("Update");
-        optionUpdate.setBounds(570,200,100,20);
+        optionUpdate.setBounds(570,160,100,20);
         optionsPanel.add(optionUpdate);
         optionsPanel.add(optionAdd);
         JButton optionDelete = new JButton("Delete");
-        optionDelete.setBounds(680,200,100,20);
+        optionDelete.setBounds(680,160,100,20);
         optionsPanel.add(optionDelete);
         //Handle click event
         optionAdd.addActionListener((ActionEvent ae)->{
@@ -96,13 +94,17 @@ public class GUI {
                 addFood(optionItem, optionPrice, optionQuantity);
             } catch (SQLException ex) {
                 Logger.getLogger(GUI.class.getName()).log(Level.SEVERE, null, ex);
+            } finally {
+                clearFields(optionId,optionItem,optionPrice,optionQuantity);
             }
         });
         optionUpdate.addActionListener((ActionEvent ae)->{
             try {
-                updateFood(optionId, optionItem, optionPrice, optionQuantity);
+                updateFood(optionId.getText(), optionItem.getText(), optionPrice.getText(), optionQuantity.getText());
             } catch (SQLException ex) {
                 Logger.getLogger(GUI.class.getName()).log(Level.SEVERE, null, ex);
+            } finally {
+                clearFields(optionId,optionItem,optionPrice,optionQuantity);
             }
         });
         optionDelete.addActionListener((ActionEvent ae)->{
@@ -110,16 +112,28 @@ public class GUI {
                 deleteFood(optionId);
             } catch (SQLException ex) {
                 Logger.getLogger(GUI.class.getName()).log(Level.SEVERE, null, ex);
+            } finally {
+                clearFields(optionId,optionItem,optionPrice,optionQuantity);
             }
         });
         //Option table
-        String[] optionTableCol = {"ID","Item","Price","Quanitiy"};
+        String[] optionTableCol = {"","Item","Price","Quanitiy"};
         optionTableModel = new DefaultTableModel(optionTableCol,0);
         optionTable = new JTable(optionTableModel);
+        optionTable.getColumnModel().getColumn(0).setWidth(0);
+        optionTable.getColumnModel().getColumn(0).setMinWidth(0);
+        optionTable.getColumnModel().getColumn(0).setMaxWidth(0);
         JScrollPane optionTableScroll = new JScrollPane(optionTable);
         optionTableScroll.setBounds(0,0,450,425);
         optionsPanel.add(optionTableScroll);
         optionTableRowClick(optionId, optionItem, optionPrice, optionQuantity);
+    }
+
+    private void clearFields(JTextField optionId, JTextField optionItem, JTextField optionPrice, JTextField optionQuantity){
+        optionId.setText("");
+        optionItem.setText("");
+        optionPrice.setText("");
+        optionQuantity.setText("");
     }
 
     private void addFood(JTextField optionItem, JTextField optionPrice, JTextField optionQuantity) throws SQLException{
@@ -135,12 +149,12 @@ public class GUI {
         }
     }
 
-    private void updateFood(JTextField optionId, JTextField optionItem, JTextField optionPrice, JTextField optionQuantity) throws SQLException {
-        if (isInt(optionId.getText()) && isInt(optionPrice.getText()) && isInt(optionQuantity.getText())) {
-            int id = Integer.parseInt(optionId.getText());
-            String item = optionItem.getText();
-            int price = Integer.parseInt(optionPrice.getText());
-            int quantity = Integer.parseInt(optionQuantity.getText());
+    private void updateFood(String optionId, String optionItem, String optionPrice, String optionQuantity) throws SQLException {
+        if (isInt(optionId) && isInt(optionPrice) && isInt(optionQuantity)) {
+            int id = Integer.parseInt(optionId);
+            String item = optionItem;
+            int price = Integer.parseInt(optionPrice);
+            int quantity = Integer.parseInt(optionQuantity);
             db.updateData(id, item, price, quantity);
             showDataIntoFoodTable();
             showDataIntoOptionTable();
@@ -161,7 +175,7 @@ public class GUI {
     }
 
     private void foodPanelComponents() {
-        createLabel("Billing Info",new int[]{550,0,800,30},foodPanel);
+        createLabel("Billing Info",new int[]{570,0,800,30},foodPanel);
         //Clear button
         JButton printBtn = new JButton("Print");
         printBtn.setBounds(700,390,80,20);
@@ -171,22 +185,58 @@ public class GUI {
         removeBtn.setBounds(610,390,80,20);
         foodPanel.add(removeBtn);
         //billing info table
-        String[] billTableCol = {"Item", "Quantity", "Price"};
+        String[] billTableCol = {"", "Item", "Quantity", "Price"};
         billTableModel = new DefaultTableModel(billTableCol,0);
         billInfoTable = new JTable(billTableModel);
         JScrollPane billScroll = new JScrollPane(billInfoTable);
+        billInfoTable.getColumnModel().getColumn(0).setWidth(0);
+        billInfoTable.getColumnModel().getColumn(0).setMinWidth(0);
+        billInfoTable.getColumnModel().getColumn(0).setMaxWidth(0);
         billScroll.setBounds(410,30,370,350);
         foodPanel.add(billScroll);
         removeBtn.addActionListener((ActionEvent ae)->{
             billTableModel.setRowCount(0);
         });
         printBtn.addActionListener((ActionEvent ae) -> {
-            //quantity of item will be reduce
+            // Print invoice
+            PrinterJob printerJob = PrinterJob.getPrinterJob();
+            Book book = new Book();
+            MessageFormat header = new MessageFormat("Green Canteen");
+            book.append(billInfoTable.getPrintable(JTable.PrintMode.NORMAL,header,null), printerJob.defaultPage());
+            printerJob.setPageable(book);
+            try {
+                printerJob.print();
+                // Update stock
+                for (int i = 0; i < billInfoTable.getRowCount() - 1; i++) {
+                    String id = billInfoTable.getValueAt(i,0).toString();
+                    String item = billInfoTable.getValueAt(i,1).toString();
+                    int quantity = Integer.parseInt(billInfoTable.getValueAt(i,2).toString());
+                    String price = billInfoTable.getValueAt(i,3).toString();
+                    try {
+                        DataList dl = db.getData(Integer.parseInt(id));
+                        String newQuantity = Integer.toString(dl.getQuantity() - quantity);
+                        updateFood(id,item,price,newQuantity);
+                    } catch (SQLException throwables) {
+                        throwables.printStackTrace();
+                    }
+                }
+                try {
+                    showDataIntoFoodTable();
+                    showDataIntoOptionTable();
+                } catch (SQLException throwables) {
+                    throwables.printStackTrace();
+                }
+            } catch (PrinterException e) {
+                e.printStackTrace();
+            }
         });
         //food table
-        String[] foodTableCol = {"Item", "Price", "Available"};
+        String[] foodTableCol = {"", "Item", "Price", "Available"};
         foodTableModel = new DefaultTableModel(foodTableCol,0);
         foodTable = new JTable(foodTableModel);
+        foodTable.getColumnModel().getColumn(0).setWidth(0);
+        foodTable.getColumnModel().getColumn(0).setMinWidth(0);
+        foodTable.getColumnModel().getColumn(0).setMaxWidth(0);
         foodTable.addMouseListener(new MouseAdapter(){
             @Override
             public void mouseClicked(MouseEvent me){
@@ -200,13 +250,14 @@ public class GUI {
 
     private void foodTableRowClick(){
         int numberOfRow = foodTable.getSelectedRow();
-        String item = foodTableModel.getValueAt(numberOfRow, 0).toString();
-        String price = foodTableModel.getValueAt(numberOfRow, 1).toString();
-        String available = foodTableModel.getValueAt(numberOfRow, 2).toString();
+        String id = foodTableModel.getValueAt(numberOfRow,0).toString();
+        String item = foodTableModel.getValueAt(numberOfRow, 1).toString();
+        String price = foodTableModel.getValueAt(numberOfRow, 2).toString();
+        String available = foodTableModel.getValueAt(numberOfRow, 3).toString();
         //Add food
         popupFrame = new JFrame();
         popupFrame.setTitle("Add Item");
-        popupFrame.setBounds(0,0,400,200);
+        popupFrame.setBounds(0,0,410,210);
         popupFrame.setLocationRelativeTo(popupFrame);
         popupFrame.setResizable(false);
         popupFrame.setLayout(null);
@@ -236,7 +287,7 @@ public class GUI {
         addItem.setBounds(300,130,80,30);
         popupFrame.add(addItem);
         addItem.addActionListener((ActionEvent ae) -> {
-            Object[] row = {item, quantity.getSelectedItem(), Integer.toString(Integer.parseInt(price) * Integer.parseInt(quantity.getSelectedItem().toString()))};
+            Object[] row = {id, item, quantity.getSelectedItem(), Integer.toString(Integer.parseInt(price) * Integer.parseInt(quantity.getSelectedItem().toString()))};
             int lastRow = billInfoTable.getRowCount();
             if (lastRow != 0) {
                 billTableModel.removeRow(lastRow - 1);
@@ -244,9 +295,9 @@ public class GUI {
             billTableModel.addRow(row);
             int total = 0;
             for (int i = 0; i < billInfoTable.getRowCount(); i++) {
-                total += Integer.parseInt(billTableModel.getValueAt(i, 2).toString());
+                total += Integer.parseInt(billTableModel.getValueAt(i, 3).toString());
             }
-            Object[] totalAmountRow = {"","Total :",Integer.toString(total)};
+            Object[] totalAmountRow = {"","","Total :",Integer.toString(total)};
             billTableModel.addRow(totalAmountRow);
             popupFrame.dispose();
         });
@@ -276,6 +327,7 @@ public class GUI {
         ArrayList<DataList> list = db.getAllData();
         for (int i = 0; i < list.size(); i++) {
             foodTableModel.addRow(new Object[]{
+                    list.get(i).getId(),
                     list.get(i).getItem(),
                     list.get(i).getPrice(),
                     list.get(i).getQuantity(),
